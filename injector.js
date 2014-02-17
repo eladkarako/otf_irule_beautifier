@@ -38,6 +38,21 @@ var loadCSS = function(src,window,onload){
 //-------------------------------------------------------------------------- done load
 var codemirror_loadComplete = function(){
   logMe("codemirror dependencies load success.");
+
+  setTimeout(function(){
+    iframe_window.loadCodemirror(iframe_window, iframe_document);
+    logMe("codemirror object load success.");
+    setTimeout(function(){
+      iframe_window.loadTCL(iframe_window, iframe_document);
+      logMe("codemirror object tcl load success.");
+      setTimeout(function(){
+          logMe("codemirror object load all success.");
+      },30);
+    },30);
+  },30);
+
+
+
   myCodeMirror = iframe_window.CodeMirror.fromTextArea(oText);
 };
 
@@ -51,12 +66,10 @@ loadJS("https://cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js", ifra
     //loadJS("https://cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/codemirror.min.js", iframe_window, function(){ 
     loadJS("https://raw2.github.com/eladkarako/otf_irule_beautifier/master/windowmod_codemirror.js", iframe_window, function(){ 
       logMe("codemirror js loaded to contentframe"); 
-      iframe_window.loadCodemirror(iframe_window, iframe_document);
       
       //loadJS("https://cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/mode/tcl/tcl.min.js", iframe_window, function(){ 
       loadJS("https://raw2.github.com/eladkarako/otf_irule_beautifier/master/windowmod_codemirror_tcl.js", iframe_window, function(){ 
         logMe("codemirror js tcl loaded to contentframe"); 
-        iframe_window.loadTCL(iframe_window, iframe_document);
 
         codemirror_loadComplete();
 
