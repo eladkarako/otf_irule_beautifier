@@ -1,121 +1,135 @@
 // mod. : window and document as argument.
-loadTCL = function(window,document) {
-  var mode = CodeMirror.getMode({tabSize: 4}, "stex");
-  function MT(name) { test.mode(name, mode, Array.prototype.slice.call(arguments, 1)); }
+loadTCL = function (window, document) {
+    //tcl mode by Ford_Lawnmower :: Based on Velocity mode by Steve O'Hara
+    CodeMirror.defineMode("tcl", function () {
+        function parseWords(str) {
+            var obj = {}, words = str.split(" ");
+            for (var i = 0; i < words.length; ++i) obj[words[i]] = true;
+            return obj;
+        }
+        var keywords = parseWords("Tcl safe after append array auto_execok auto_import auto_load " +
+            "auto_mkindex auto_mkindex_old auto_qualify auto_reset bgerror " +
+            "binary break catch cd close concat continue dde eof encoding error " +
+            "eval exec exit expr fblocked fconfigure fcopy file fileevent filename " +
+            "filename flush for foreach format gets glob global history http if " +
+            "incr info interp join lappend lindex linsert list llength load lrange " +
+            "lreplace lsearch lset lsort memory msgcat namespace open package parray " +
+            "pid pkg::create pkg_mkIndex proc puts pwd re_syntax read regex regexp " +
+            "registry regsub rename resource return scan seek set socket source split " +
+            "string subst switch tcl_endOfWord tcl_findLibrary tcl_startOfNextWord " +
+            "tcl_wordBreakAfter tcl_startOfPreviousWord tcl_wordBreakBefore tcltest " +
+            "tclvars tell time trace unknown unset update uplevel upvar variable " +
+            "vwait");
+        var functions = parseWords("if elseif else and not or eq ne in ni for foreach while switch");
+        var isOperatorChar = /[+\-*&%=<>!?^\/\|]/;
 
-  MT("word",
-     "foo");
+        function chain(stream, state, f) {
+            state.tokenize = f;
+            return f(stream, state);
+        }
 
-  MT("twoWords",
-     "foo bar");
+        function tokenBase(stream, state) {
+            var beforeParams = state.beforeParams;
+            state.beforeParams = false;
+            var ch = stream.next();
+            if ((ch == '"' || ch == "'") && state.inParams)
+                return chain(stream, state, tokenString(ch));
+            else if (/[\[\]{}\(\),;\.]/.test(ch)) {
+                if (ch == "(" && beforeParams) state.inParams = true;
+                else if (ch == ")") state.inParams = false;
+                return null;
+            } else if (/\d/.test(ch)) {
+                stream.eatWhile(/[\w\.]/);
+                return "number";
+            } else if (ch == "#" && stream.eat("*")) {
+                return chain(stream, state, tokenComment);
+            } else if (ch == "#" && stream.match(/ *\[ *\[/)) {
+                return chain(stream, state, tokenUnparsed);
+            } else if (ch == "#" && stream.eat("#")) {
+                stream.skipToEnd();
+                return "comment";
+            } else if (ch == '"') {
+                stream.skipTo(/"/);
+                return "comment";
+            } else if (ch == "$") {
+                stream.eatWhile(/[$_a-z0-9A-Z\.{:]/);
+                stream.eatWhile(/}/);
+                state.beforeParams = true;
+                return "builtin";
+            } else if (isOperatorChar.test(ch)) {
+                stream.eatWhile(isOperatorChar);
+                return "comment";
+            } else {
+                stream.eatWhile(/[\w\$_{}]/);
+                var word = stream.current().toLowerCase();
+                if (keywords && keywords.propertyIsEnumerable(word))
+                    return "keyword";
+                if (functions && functions.propertyIsEnumerable(word)) {
+                    state.beforeParams = true;
+                    return "keyword";
+                }
+                return null;
+            }
+        }
 
-  MT("beginEndDocument",
-     "[tag \\begin][bracket {][atom document][bracket }]",
-     "[tag \\end][bracket {][atom document][bracket }]");
+        function tokenString(quote) {
+            return function (stream, state) {
+                var escaped = false,
+                    next, end = false;
+                while ((next = stream.next()) != null) {
+                    if (next == quote && !escaped) {
+                        end = true;
+                        break;
+                    }
+                    escaped = !escaped && next == "\\";
+                }
+                if (end) state.tokenize = tokenBase;
+                return "string";
+            };
+        }
 
-  MT("beginEndEquation",
-     "[tag \\begin][bracket {][atom equation][bracket }]",
-     "  E=mc^2",
-     "[tag \\end][bracket {][atom equation][bracket }]");
+        function tokenComment(stream, state) {
+            var maybeEnd = false,
+                ch;
+            while (ch = stream.next()) {
+                if (ch == "#" && maybeEnd) {
+                    state.tokenize = tokenBase;
+                    break;
+                }
+                maybeEnd = (ch == "*");
+            }
+            return "comment";
+        }
 
-  MT("beginModule",
-     "[tag \\begin][bracket {][atom module][bracket }[[]]]");
+        function tokenUnparsed(stream, state) {
+            var maybeEnd = 0,
+                ch;
+            while (ch = stream.next()) {
+                if (ch == "#" && maybeEnd == 2) {
+                    state.tokenize = tokenBase;
+                    break;
+                }
+                if (ch == "]")
+                    maybeEnd++;
+                else if (ch != " ")
+                    maybeEnd = 0;
+            }
+            return "meta";
+        }
+        return {
+            startState: function () {
+                return {
+                    tokenize: tokenBase,
+                    beforeParams: false,
+                    inParams: false
+                };
+            },
+            token: function (stream, state) {
+                if (stream.eatSpace()) return null;
+                return state.tokenize(stream, state);
+            }
+        };
+    });
+    CodeMirror.defineMIME("text/x-tcl", "tcl");
 
-  MT("beginModuleId",
-     "[tag \\begin][bracket {][atom module][bracket }[[]id=bbt-size[bracket ]]]");
-
-  MT("importModule",
-     "[tag \\importmodule][bracket [[][string b-b-t][bracket ]]{][builtin b-b-t][bracket }]");
-
-  MT("importModulePath",
-     "[tag \\importmodule][bracket [[][tag \\KWARCslides][bracket {][string dmath/en/cardinality][bracket }]]{][builtin card][bracket }]");
-
-  MT("psForPDF",
-     "[tag \\PSforPDF][bracket [[][atom 1][bracket ]]{]#1[bracket }]");
-
-  MT("comment",
-     "[comment % foo]");
-
-  MT("tagComment",
-     "[tag \\item][comment % bar]");
-
-  MT("commentTag",
-     " [comment % \\item]");
-
-  MT("commentLineBreak",
-     "[comment %]",
-     "foo");
-
-  MT("tagErrorCurly",
-     "[tag \\begin][error }][bracket {]");
-
-  MT("tagErrorSquare",
-     "[tag \\item][error ]]][bracket {]");
-
-  MT("commentCurly",
-     "[comment % }]");
-
-  MT("tagHash",
-     "the [tag \\#] key");
-
-  MT("tagNumber",
-     "a [tag \\$][atom 5] stetson");
-
-  MT("tagPercent",
-     "[atom 100][tag \\%] beef");
-
-  MT("tagAmpersand",
-     "L [tag \\&] N");
-
-  MT("tagUnderscore",
-     "foo[tag \\_]bar");
-
-  MT("tagBracketOpen",
-     "[tag \\emph][bracket {][tag \\{][bracket }]");
-
-  MT("tagBracketClose",
-     "[tag \\emph][bracket {][tag \\}][bracket }]");
-
-  MT("tagLetterNumber",
-     "section [tag \\S][atom 1]");
-
-  MT("textTagNumber",
-     "para [tag \\P][atom 2]");
-
-  MT("thinspace",
-     "x[tag \\,]y");
-
-  MT("thickspace",
-     "x[tag \\;]y");
-
-  MT("negativeThinspace",
-     "x[tag \\!]y");
-
-  MT("periodNotSentence",
-     "J.\\ L.\\ is");
-
-  MT("periodSentence",
-     "X[tag \\@]. The");
-
-  MT("italicCorrection",
-     "[bracket {][tag \\em] If[tag \\/][bracket }] I");
-
-  MT("tagBracket",
-     "[tag \\newcommand][bracket {][tag \\pop][bracket }]");
-
-  MT("inlineMathTagFollowedByNumber",
-     "[keyword $][tag \\pi][number 2][keyword $]");
-
-  MT("inlineMath",
-     "[keyword $][number 3][variable-2 x][tag ^][number 2.45]-[tag \\sqrt][bracket {][tag \\$\\alpha][bracket }] = [number 2][keyword $] other text");
-
-  MT("displayMath",
-     "More [keyword $$]\t[variable-2 S][tag ^][variable-2 n][tag \\sum] [variable-2 i][keyword $$] other text");
-
-  MT("mathWithComment",
-     "[keyword $][variable-2 x] [comment % $]",
-     "[variable-2 y][keyword $] other text");
-
-  MT("lineBreakArgument",
-    "[tag \\\\][bracket [[][atom 1cm][bracket ]]]");
 };
