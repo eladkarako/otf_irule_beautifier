@@ -8,7 +8,7 @@ var myCodeMirror;
 //-------------------------------------------------------------------------- function toolkit
 iframe_window.toolkit = {};
 
-iframe_window.toolkit.useCache = false;
+iframe_window.toolkit.useCache = (!!window["useCache"]) || (!!iframe_window["useCache"]) || false; //way to control outside cache / no cache state.
 
 iframe_window.toolkit.getRND = function () {
     return (Math.random() * 99999).toString(20);
