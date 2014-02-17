@@ -1,3 +1,7 @@
+var logMe = function(s){
+  console ? (console.log ? console.log("injector:  >>" + s) : void(0)) :void(0);
+};
+
 var loadJS = function(src,window,onload){
     var innerFN = function(src,window,onload){
         var s = window.document.createElement("script");
@@ -9,6 +13,7 @@ var loadJS = function(src,window,onload){
         innerFN(src,window,onload);
     },30);
 };
+
 var loadCSS = function(src,window,onload){
     var innerFN = function(src,window,onload){
         var s = window.document.createElement("link");
@@ -23,14 +28,37 @@ var loadCSS = function(src,window,onload){
     },30);
 };
 
-
+var codemirror_loadComplete = function(){
+  logMe("codemirror dependencies load success.");
+  
+};
 
 var iframe_window = document.getElementById("contentframe").contentWindow;
 var iframe_document = iframe_window.document;
 var oText = iframe_document.getElementById("rule_definition");
 
 
-loadJS("https://cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js", iframe_window, function(){ console.log("jQuery loaded to contentframe"); });
+loadJS("https://cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js", iframe_window, function(){ 
+  logMe("jQuery loaded to contentframe"); 
+  
+  loadCSS("https://cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/codemirror.min.css", iframe_window, function(){
+    logMe("codemirror css loaded to contentframe"); 
+    
+    loadJS("https://cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/codemirror.min.js", iframe_window, function(){ 
+      logMe("codemirror js loaded to contentframe"); 
+      
+      loadJS("https://cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/mode/tcl/tcl.min.js", iframe_window, function(){ 
+        logMe("codemirror js tcl loaded to contentframe"); 
+
+        codemirror_loadComplete();
+
+      });  
+
+    }); 
+    
+  });
+  
+});
 
 /*
 loadCSS(
