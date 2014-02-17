@@ -62,7 +62,9 @@ loadCodemirror = function (window, document) {
           options[opt] = defaults[opt];
       setGuttersForLineNumbers(options);
 
-      var docStart = typeof options.value == "string" ? 0 : options.value.first;
+      //var docStart = typeof options.value == "string" ? 0 : options.value.first;
+      var docStart = 0; //bugfix
+      
       var display = this.display = makeDisplay(place, docStart);
       display.wrapper.CodeMirror = this;
       updateGutters(this);
