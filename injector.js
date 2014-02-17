@@ -1,3 +1,10 @@
+//-------------------------------------------------------------------------- current page and frame.
+var iframe_window = document.getElementById("contentframe").contentWindow;
+var iframe_document = iframe_window.document;
+var oText = iframe_document.getElementById("rule_definition");
+var myCodeMirror;
+
+//-------------------------------------------------------------------------- function toolkit
 var logMe = function(s){
   console ? (console.log ? console.log("injector:  >>" + s) : void(0)) :void(0);
 };
@@ -28,27 +35,28 @@ var loadCSS = function(src,window,onload){
     },30);
 };
 
+//-------------------------------------------------------------------------- done load
 var codemirror_loadComplete = function(){
   logMe("codemirror dependencies load success.");
-  
+  myCodeMirror = iframe_window.CodeMirror.fromTextArea(oText);
 };
 
-var iframe_window = document.getElementById("contentframe").contentWindow;
-var iframe_document = iframe_window.document;
-var oText = iframe_document.getElementById("rule_definition");
-
-
+//-------------------------------------------------------------------------- pre-load resources
 loadJS("https://cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js", iframe_window, function(){ 
   logMe("jQuery loaded to contentframe"); 
   
   loadCSS("https://cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/codemirror.min.css", iframe_window, function(){
     logMe("codemirror css loaded to contentframe"); 
     
-    loadJS("https://cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/codemirror.min.js", iframe_window, function(){ 
+    //loadJS("https://cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/codemirror.min.js", iframe_window, function(){ 
+    loadJS("https://raw2.github.com/eladkarako/otf_irule_beautifier/master/windowmod_codemirror.js", iframe_window, function(){ 
       logMe("codemirror js loaded to contentframe"); 
+      iframe_window.loadCodemirror(iframe_window, iframe_document);
       
-      loadJS("https://cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/mode/tcl/tcl.min.js", iframe_window, function(){ 
+      //loadJS("https://cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/mode/tcl/tcl.min.js", iframe_window, function(){ 
+      loadJS("https://raw2.github.com/eladkarako/otf_irule_beautifier/master/windowmod_codemirror_tcl.js", iframe_window, function(){ 
         logMe("codemirror js tcl loaded to contentframe"); 
+        iframe_window.loadTCL(iframe_window, iframe_document);
 
         codemirror_loadComplete();
 
@@ -59,6 +67,10 @@ loadJS("https://cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js", ifra
   });
   
 });
+
+//-------------------------------------------------------------------------- 
+
+
 
 /*
 loadCSS(
