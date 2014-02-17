@@ -5,80 +5,121 @@ var oText = iframe_document.getElementById("rule_definition");
 var myCodeMirror;
 
 //-------------------------------------------------------------------------- function toolkit
-var logMe = function(s){
-  console ? (console.log ? console.log("injector:  >>" + s) : void(0)) :void(0);
+var getRND = function () {
+    return (Math.random() * 99999).toString(20);
 };
 
-var loadJS = function(src,window,onload){
-    var innerFN = function(src,window,onload){
+var logMe = function (s) {
+    console ? (console.log ? console.log("injector:  >>" + s) : void(0)) : void(0);
+};
+
+var loadJS = function (src, window, onload) {
+    var id = "js" + getRND();
+    var innerFN = function (id, src, window, onload) {
         var s = window.document.createElement("script");
-        s.onload = function(ev){ onload.call(); };
+        s.id = id;
+        s.name = id;
+        s.onload = function (ev) {
+            onload.call();
+        };
         s.src = src;
         window.document.getElementsByTagName("head")[0].appendChild(s);
     };
-    setTimeout(function(){
-        innerFN(src,window,onload);
-    },30);
+    setTimeout(function () {
+        innerFN(id, src, window, onload);
+    }, 30);
+    return id;
 };
 
-var loadCSS = function(src,window,onload){
-    var innerFN = function(src,window,onload){
+var loadCSSStyle = function (txt, window, onload) {
+    var id = "css_style" + getRND();
+    var innerFN = function (id, txt, window, onload) {
+        var s = window.document.createElement("style");
+        s.id = id;
+        s.name = id;
+        s.onload = function (ev) {
+            onload.call();
+        };
+        s.type = "text/css";
+        var t = window.document.createTextNode(txt);
+        s.appendChild(t);
+        window.document.getElementsByTagName("head")[0].appendChild(s);
+    };
+    setTimeout(function () {
+        innerFN(id, txt, window, onload);
+    }, 300);
+    return id;
+};
+var loadCSS = function (src, window, onload) {
+    var id = "css" + getRND();
+    var innerFN = function (id, src, window, onload) {
         var s = window.document.createElement("link");
-        s.onload = function(ev){ onload.call(); };
+        s.id = id;
+        s.name = id;
+        s.onload = function (ev) {
+            onload.call();
+        };
         s.rel = "stylesheet";
         s.type = "text/css";
         s.href = src;
         window.document.getElementsByTagName("head")[0].appendChild(s);
     };
-    setTimeout(function(){
-        innerFN(src,window,onload);
-    },30);
+    setTimeout(function () {
+        innerFN(id, src, window, onload);
+    }, 300);
+    return id;
 };
 
 //-------------------------------------------------------------------------- done load
-var codemirror_loadComplete = function(){
-  logMe("codemirror dependencies load success.");
+var codemirror_loadComplete = function () {
+    logMe("codemirror dependencies load success.");
 
-  setTimeout(function(){
-    iframe_window.loadCodemirror(iframe_window, iframe_document);
-    logMe("codemirror object load success.");
-    setTimeout(function(){
-      iframe_window.loadTCL(iframe_window, iframe_document);
-      logMe("codemirror object tcl load success.");
-      setTimeout(function(){
-          logMe("codemirror object load all success.");
-      },30);
-    },30);
-  },30);
+    setTimeout(function () {
+        iframe_window.loadCodemirror(iframe_window, iframe_document);
+        logMe("codemirror object load success.");
 
+        setTimeout(function () {
+            iframe_window.loadTCL(iframe_window, iframe_document);
+            logMe("codemirror object tcl load success.");
 
+            setTimeout(function () {
+                logMe("codemirror object load all success.");
 
-  myCodeMirror = iframe_window.CodeMirror.fromTextArea(oText);
+                myCodeMirror = iframe_window.CodeMirror.fromTextArea(oText.id, {
+                    mode: "text/x-tcl",
+                    lineNumbers: true,
+                    gutters: ["CodeMirror-linenumbers", "breakpoints"]
+                });
+
+            }, 300);
+        }, 300);
+    }, 300);
 };
 
 //-------------------------------------------------------------------------- pre-load resources
-loadJS("https://cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js", iframe_window, function(){ 
-  logMe("jQuery loaded to contentframe"); 
-  
-  loadCSS("https://cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/codemirror.min.css", iframe_window, function(){
-    logMe("codemirror css loaded to contentframe"); 
-    
-    //loadJS("https://cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/codemirror.min.js", iframe_window, function(){ 
-    loadJS("https://raw2.github.com/eladkarako/otf_irule_beautifier/master/windowmod_codemirror.js", iframe_window, function(){ 
-      logMe("codemirror js loaded to contentframe"); 
-      
-      //loadJS("https://cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/mode/tcl/tcl.min.js", iframe_window, function(){ 
-      loadJS("https://raw2.github.com/eladkarako/otf_irule_beautifier/master/windowmod_codemirror_tcl.js", iframe_window, function(){ 
-        logMe("codemirror js tcl loaded to contentframe"); 
+loadJS("https://cdnjs.cloudflare.com/ajax/libs/jquery/1.9.1/jquery.min.js", iframe_window, function () {
+    logMe("jQuery loaded to contentframe");
 
-        codemirror_loadComplete();
+    loadCSS("https://cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/codemirror.min.css", iframe_window, function () {
+        logMe("codemirror css loaded to contentframe");
 
-      });  
+        loadCSSStyle(".breakpoints{width:.8em;} .breakpoint{color:#822;} .CodeMirror{border:1px solid #aaa;}", iframe_window, function () {
 
-    }); 
-    
-  });
-  
+            //loadJS("https://cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/codemirror.min.js", iframe_window, function(){ 
+            loadJS("https://raw2.github.com/eladkarako/otf_irule_beautifier/master/windowmod_codemirror.js", iframe_window, function () {
+                logMe("codemirror js loaded to contentframe");
+
+                //loadJS("https://cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/mode/tcl/tcl.min.js", iframe_window, function(){ 
+                loadJS("https://raw2.github.com/eladkarako/otf_irule_beautifier/master/windowmod_codemirror_tcl.js", iframe_window, function () {
+                    logMe("codemirror js tcl loaded to contentframe");
+
+                    codemirror_loadComplete();
+
+                });
+            });
+        });
+    });
+
 });
 
 //-------------------------------------------------------------------------- 
