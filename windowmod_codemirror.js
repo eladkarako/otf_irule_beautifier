@@ -1,7 +1,7 @@
 // CodeMirror version 3.21
 // mod. : window and document as argument.
 // CodeMirror is the only global var we claim
-(function(window,document) {
+loadCodemirror = function(window,document) {
     window.CodeMirror = (function() {
       "use strict";
 
@@ -6048,4 +6048,4 @@
 
       return CodeMirror;
     }(window,document));
-}(window,document));
+};
